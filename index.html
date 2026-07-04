@@ -64,7 +64,7 @@ import { FXAAShader } from 'https://unpkg.com/three@0.152.0/examples/jsm/shaders
 const container = document.getElementById('container');
 const overlayWinner = document.getElementById('overlay-winner');
 let camera, scene, renderer, composer, controls;
-let wheelMesh, wheelMaterial;
+let wheelGroup, wheelMaterial;
 let clock = new THREE.Clock();
 const size = {w: window.innerWidth, h: window.innerHeight};
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -136,11 +136,10 @@ async function init(){
   plinth.position.y = -0.3;
   scene.add(plinth);
 
-  // Wheel geometry: thick cylinder
+  // Wheel: build as a group with two textured circle faces
   const wheelRadius = 1.6;
   const wheelDepth = 0.18;
-  const wheelGeo = new THREE.CylinderGeometry(wheelRadius, wheelRadius, wheelDepth, 256, 1, true);
-  // create material with dynamic map
+  // create material with dynamic map for faces
   const canvas = drawWheelCanvas(2048, 2048, segments);
   const texture = new THREE.CanvasTexture(canvas);
   texture.encoding = THREE.sRGBEncoding;
@@ -148,22 +147,31 @@ async function init(){
   wheelMaterial = new THREE.MeshStandardMaterial({
     map: texture,
     roughnessMap: generateRoughnessMap(canvas),
-    metalness: 0.2, metalnessMap: generateMetalnessMap(canvas),
-    roughness: 0.45, envMap: envMap, envMapIntensity: 1.2,
+    metalness: 0.2,
+    metalnessMap: generateMetalnessMap(canvas),
+    roughness: 0.45,
+    envMap: envMap,
+    envMapIntensity: 1.2,
     side: THREE.DoubleSide
   });
-  wheelMesh = new THREE.Mesh(wheelGeo, wheelMaterial);
-  wheelMesh.rotation.z = Math.PI; // upright
-  wheelMesh.position.y = 0.55;
-  wheelMesh.receiveShadow = true;
-  scene.add(wheelMesh);
+  const front = new THREE.Mesh(new THREE.CircleGeometry(wheelRadius, 256), wheelMaterial);
+  const back = new THREE.Mesh(new THREE.CircleGeometry(wheelRadius, 256), wheelMaterial);
+  front.position.z = wheelDepth * 0.5;
+  back.position.z = -wheelDepth * 0.5;
+  back.rotation.y = Math.PI;
+  front.receiveShadow = back.receiveShadow = true;
+  wheelGroup = new THREE.Group();
+  wheelGroup.add(front);
+  wheelGroup.add(back);
+  wheelGroup.position.y = 0.55;
+  scene.add(wheelGroup);
 
   // Wheel rim (glass/metal)
   const rim = new THREE.Mesh(
     new THREE.TorusGeometry(wheelRadius+0.03, 0.08, 24, 200),
     new THREE.MeshPhysicalMaterial({color:0x22263a, roughness:0.25, metalness:0.9, clearcoat:0.6, reflectivity: 1.0})
   );
-  rim.position.copy(wheelMesh.position);
+  rim.position.copy(wheelGroup.position);
   rim.rotation.x = Math.PI/2;
   scene.add(rim);
 
@@ -516,8 +524,8 @@ function animate(){
 
   // Angle update
   angle += angularVel * dt;
-  // apply to wheel mesh (rotation about Y)
-  wheelMesh.rotation.y = angle;
+  // apply to wheel group (rotation about Z axis)
+  if(wheelGroup) wheelGroup.rotation.z = angle;
 
   // tick sound: when wheel passes segment boundary
   const n = segments.length;
@@ -570,7 +578,9 @@ function spawnConfetti(count=60, color='#ffd56b'){
       color: randomColor(), 
       side: THREE.DoubleSide,
       roughness: 0.6,
-      metalness: 0.2
+      metalness: 0.2,
+      transparent: true,
+      opacity: 1.0
     });
     const mesh = new THREE.Mesh(g, mat);
     // position near wheel center
@@ -631,7 +641,11 @@ function setupAudio(){
   spinOsc.connect(spinFilter);
   spinFilter.connect(spinGain);
   spinGain.connect(master);
-  spinOsc.start();
+  // Start the oscillator only after a user gesture — browsers block audio otherwise.
+  document.body.addEventListener('pointerdown', () => {
+    if(audioCtx.state === 'suspended') audioCtx.resume();
+    try{ spinOsc.start(); } catch(e){}
+  }, {once:true});
 
   spinOscGain = spinGain;
 }
