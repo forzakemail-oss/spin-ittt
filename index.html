@@ -185,6 +185,55 @@
     min-height: 560px;
   }
 
+  .title-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  .target-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    border-radius: 999px;
+    background: rgba(255, 123, 87, 0.14);
+    color: #a24f33;
+    font-weight: 700;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .stat-card {
+    padding: 10px 12px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.72);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .stat-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--muted);
+  }
+
+  .stat-value {
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--text);
+  }
+
   .ui-card h1 {
     margin: 0;
     font-size: clamp(24px, 3.2vw, 34px);
@@ -239,7 +288,7 @@
 
   .seg-row {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 44px 44px;
+    grid-template-columns: minmax(0, 1fr) 44px 44px 44px;
     gap: 8px;
     align-items: center;
     padding: 8px;
@@ -278,6 +327,64 @@
     color: #4b3a4f;
     cursor: pointer;
     font-size: 16px;
+  }
+
+  .seg-row .target-btn.active {
+    background: linear-gradient(135deg, #ffe082, #ffb347);
+    color: #6b3a0b;
+  }
+
+  .history-card {
+    padding: 10px 12px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.72);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+  }
+
+  .history-title {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  #historyList {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .history-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 14px;
+    color: var(--text);
+  }
+
+  .history-badge {
+    font-size: 12px;
+    padding: 4px 8px;
+    border-radius: 999px;
+    background: rgba(255, 123, 87, 0.14);
+    color: #a24f33;
+  }
+
+  #confetti {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .wheel-card .wheel-shell {
+    z-index: 2;
   }
 
   .footer {
@@ -342,7 +449,7 @@
     }
 
     .seg-row {
-      grid-template-columns: minmax(0, 1fr) 38px 38px;
+      grid-template-columns: minmax(0, 1fr) 38px 38px 38px;
     }
 
     .seg-row input[type="color"],
@@ -366,6 +473,7 @@
 <body>
 <div class="app">
   <div class="wheel-card">
+    <canvas id="confetti"></canvas>
     <div class="wheel-shell">
       <div class="pointer"></div>
       <div class="wheel-shadow"></div>
@@ -375,21 +483,51 @@
     <div id="overlay-winner"></div>
   </div>
   <div class="ui-card">
-    <h1>Cartoon Spin Wheel</h1>
-    <p>Tap the wheel to spin, edit your prizes, and watch the surprise land in a bright, playful style built for phones, tablets, and desktops.</p>
+    <div class="title-row">
+      <div>
+        <h1>Cartoon Spin Wheel</h1>
+        <p>Tap the wheel to spin, edit your prizes, and chase your target in a bright, game-like experience built for every screen.</p>
+      </div>
+      <div class="target-pill" id="targetPill">🎯 Target: none</div>
+    </div>
+    <div class="stats-grid">
+      <div class="stat-card">
+        <span class="stat-label">Spins</span>
+        <span class="stat-value" id="spinCount">0</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Streak</span>
+        <span class="stat-value" id="streakCount">0</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Best</span>
+        <span class="stat-value" id="bestStreak">0</span>
+      </div>
+    </div>
     <div class="controls">
       <button class="btn" id="spinBtn">SPIN</button>
       <button class="btn secondary" id="stopBtn">BRAKE</button>
+      <button class="btn secondary" id="randomTargetBtn">🎯 Random Target</button>
+    </div>
+    <div class="controls compact">
+      <button class="btn small secondary" id="randomColors">🎨 Random Colors</button>
+      <button class="btn small secondary" id="shuffleSeg">🔀 Shuffle</button>
+      <button class="btn small secondary" id="clearTarget">Clear Target</button>
     </div>
     <div class="seg-list" id="segList"></div>
     <div class="controls">
       <button class="btn small secondary" id="addSeg">+ Add Slice</button>
       <button class="btn small secondary" id="resetSeg">Reset</button>
     </div>
-    <div class="footer">Everything stays readable and touch-friendly on small screens, while the colorful cartoon look keeps the fun front and center.</div>
+    <div class="history-card">
+      <div class="history-title">Recent wins</div>
+      <ul id="historyList"></ul>
+    </div>
+    <div class="footer">The wheel now remembers your setup, tracks your streak, and feels more polished with target mode, colorful effects, and smoother stopping.</div>
   </div>
 </div>
 <script>
+const STORAGE_KEY = 'spin-ittt-state-v1';
 const defaultSegments = [
   {label:'Prize A', color:'#ff6b6b'},
   {label:'Prize B', color:'#ffd56b'},
@@ -406,9 +544,22 @@ let isSpinning = false;
 let lastFrame = performance.now();
 let spinTimer = 0;
 let lastWinner = '';
+let targetIndex = null;
+let targetRotation = 0;
+let stats = {spins: 0, streak: 0, bestStreak: 0};
+let history = [];
+let audioContext = null;
+let confettiPieces = [];
 const wheelSvg = document.getElementById('wheelSvg');
 const overlayWinner = document.getElementById('overlay-winner');
 const hud = document.getElementById('hud');
+const confettiCanvas = document.getElementById('confetti');
+const confettiCtx = confettiCanvas.getContext('2d');
+const targetPill = document.getElementById('targetPill');
+const spinCountEl = document.getElementById('spinCount');
+const streakCountEl = document.getElementById('streakCount');
+const bestStreakEl = document.getElementById('bestStreak');
+const historyListEl = document.getElementById('historyList');
 
 function escapeHtml(value){
   return String(value)
@@ -440,6 +591,45 @@ function wrapLabel(label){
   });
   if(current) lines.push(current);
   return lines.slice(0, 3);
+}
+
+function getNormalizedRotation(){
+  return ((rotation % 360) + 360) % 360;
+}
+
+function persistState(){
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({segments, targetIndex, stats, history}));
+  } catch (error) {
+    console.warn('Could not save wheel state', error);
+  }
+}
+
+function loadState(){
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    if(saved && Array.isArray(saved.segments) && saved.segments.length){
+      segments = saved.segments.map((segment) => ({...segment}));
+    }
+    if(typeof saved?.targetIndex === 'number' && saved.targetIndex >= 0){
+      targetIndex = saved.targetIndex;
+    }
+    if(saved?.stats){
+      stats = {...stats, ...saved.stats};
+    }
+    if(Array.isArray(saved?.history)){ history = saved.history.slice(0, 8); }
+  } catch (error) {
+    console.warn('Could not load wheel state', error);
+  }
+}
+
+function updateStatusUI(){
+  const targetLabel = targetIndex !== null && segments[targetIndex] ? segments[targetIndex].label : 'none';
+  targetPill.textContent = `🎯 Target: ${targetLabel}`;
+  spinCountEl.textContent = stats.spins;
+  streakCountEl.textContent = stats.streak;
+  bestStreakEl.textContent = stats.bestStreak;
+  renderHistory();
 }
 
 function renderWheel(){
@@ -499,58 +689,198 @@ function renderSegmentList(){
   segments.forEach((segment, index) => {
     const row = document.createElement('div');
     row.className = 'seg-row';
+
     const labelInput = document.createElement('input');
     labelInput.type = 'text';
     labelInput.value = segment.label;
     labelInput.addEventListener('input', (event) => {
       segment.label = event.target.value;
       renderWheel();
+      updateStatusUI();
+      persistState();
     });
+
     const colorInput = document.createElement('input');
     colorInput.type = 'color';
     colorInput.value = segment.color;
     colorInput.addEventListener('input', (event) => {
       segment.color = event.target.value;
       renderWheel();
+      persistState();
     });
+
+    const targetButton = document.createElement('button');
+    targetButton.className = `target-btn ${index === targetIndex ? 'active' : ''}`;
+    targetButton.textContent = index === targetIndex ? '🎯' : '◎';
+    targetButton.title = 'Set as target';
+    targetButton.addEventListener('click', () => {
+      targetIndex = index === targetIndex ? null : index;
+      renderSegmentList();
+      updateStatusUI();
+      persistState();
+    });
+
     const deleteButton = document.createElement('button');
     deleteButton.textContent = '✕';
     deleteButton.addEventListener('click', () => {
       segments.splice(index, 1);
+      if(targetIndex !== null){
+        if(targetIndex >= segments.length){ targetIndex = null; }
+        else if(index < targetIndex){ targetIndex -= 1; }
+      }
       if(!segments.length) segments.push({label:'Prize', color:'#ff6b6b'});
       renderSegmentList();
       renderWheel();
+      updateStatusUI();
+      persistState();
     });
+
     row.appendChild(labelInput);
     row.appendChild(colorInput);
+    row.appendChild(targetButton);
     row.appendChild(deleteButton);
     segList.appendChild(row);
   });
 }
 
-function spinWheel(){
-  if(!segments.length) return;
-  isSpinning = true;
-  velocity = 6 + Math.random() * 6;
-  if(lastWinner){
-    velocity += 1.4;
+function renderHistory(){
+  historyListEl.innerHTML = '';
+  if(!history.length){
+    historyListEl.innerHTML = '<li class="history-item"><span>No wins yet</span><span class="history-badge">Spin to start</span></li>';
+    return;
   }
+  history.slice(0, 6).forEach((item) => {
+    const li = document.createElement('li');
+    li.className = 'history-item';
+    li.innerHTML = `<span>${escapeHtml(item)}</span><span class="history-badge">Saved</span>`;
+    historyListEl.appendChild(li);
+  });
+}
+
+function ensureAudio(){
+  if(!audioContext){
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if(!AudioCtx) return null;
+    audioContext = new AudioCtx();
+  }
+  if(audioContext.state === 'suspended'){ audioContext.resume(); }
+  return audioContext;
+}
+
+function playTone(frequency, duration, type = 'sine', volume = 0.03){
+  const ctx = ensureAudio();
+  if(!ctx) return;
+  const now = ctx.currentTime;
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = type;
+  osc.frequency.setValueAtTime(frequency, now);
+  gain.gain.setValueAtTime(0.0001, now);
+  gain.gain.exponentialRampToValueAtTime(volume, now + 0.01);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.start(now);
+  osc.stop(now + duration + 0.02);
+}
+
+function resizeConfetti(){
+  confettiCanvas.width = confettiCanvas.clientWidth * window.devicePixelRatio;
+  confettiCanvas.height = confettiCanvas.clientHeight * window.devicePixelRatio;
+  confettiCtx.setTransform(window.devicePixelRatio, 0, 0, window.devicePixelRatio, 0, 0);
+}
+
+function burstConfetti(){
+  const width = confettiCanvas.clientWidth || 400;
+  const height = confettiCanvas.clientHeight || 400;
+  confettiPieces = Array.from({length: 70}, () => ({
+    x: width / 2,
+    y: height * 0.18,
+    vx: (Math.random() - 0.5) * 7,
+    vy: Math.random() * 3 + 2,
+    size: Math.random() * 7 + 4,
+    color: randomColor(),
+    rotation: Math.random() * 360,
+    spin: (Math.random() - 0.5) * 8
+  }));
+  const animate = () => {
+    confettiCtx.clearRect(0, 0, width, height);
+    confettiPieces = confettiPieces.filter((piece) => piece.y < height + 40);
+    confettiPieces.forEach((piece) => {
+      piece.x += piece.vx;
+      piece.y += piece.vy;
+      piece.vy += 0.06;
+      piece.rotation += piece.spin;
+      confettiCtx.save();
+      confettiCtx.translate(piece.x, piece.y);
+      confettiCtx.rotate(piece.rotation * Math.PI / 180);
+      confettiCtx.fillStyle = piece.color;
+      confettiCtx.fillRect(-piece.size / 2, -piece.size / 2, piece.size, piece.size * 0.6);
+      confettiCtx.restore();
+    });
+    if(confettiPieces.length){ requestAnimationFrame(animate); }
+  };
+  animate();
+}
+
+function setTargetRandomly(){
+  if(!segments.length) return;
+  targetIndex = Math.floor(Math.random() * segments.length);
+  updateStatusUI();
+  renderSegmentList();
+  persistState();
+}
+
+function randomizeColors(){
+  segments.forEach((segment) => {
+    segment.color = randomColor();
+  });
+  renderWheel();
+  persistState();
+}
+
+function shuffleSegments(){
+  segments = [...segments].sort(() => Math.random() - 0.5);
+  renderSegmentList();
+  renderWheel();
+  persistState();
+}
+
+function spinWheel(){
+  if(!segments.length || isSpinning) return;
+  isSpinning = true;
+  stats.spins += 1;
+  const baseSpeed = 7 + Math.random() * 5;
+  velocity = baseSpeed;
+  const currentRotation = getNormalizedRotation();
+  const sectorAngle = 360 / segments.length;
+  const pointerAngle = 270;
+  const targetSegmentIndex = targetIndex !== null ? targetIndex : Math.floor(Math.random() * segments.length);
+  const targetCenterAngle = targetSegmentIndex * sectorAngle - 90;
+  const angleToTarget = ((targetCenterAngle - pointerAngle + 360) % 360);
+  const rounds = 6 + Math.floor(Math.random() * 4);
+  targetRotation = currentRotation + rounds * 360 + angleToTarget + Math.random() * 3;
   spinTimer = 0;
-  hud.textContent = 'Spinning...';
+  hud.textContent = targetIndex !== null ? 'Target locked...' : 'Spinning...';
+  playTone(520, 0.16, 'triangle', 0.025);
+  updateStatusUI();
+  persistState();
 }
 
 function brakeWheel(){
-  velocity = Math.max(0.6, velocity * 0.22);
-  if(velocity < 0.75){
-    velocity = 0.5;
+  if(!isSpinning) return;
+  velocity = Math.max(0.55, velocity * 0.28);
+  if(velocity < 0.8){
+    velocity = 0.7;
   }
+  playTone(320, 0.12, 'square', 0.02);
 }
 
 function determineWinner(){
   if(!segments.length) return null;
   const sectorAngle = 360 / segments.length;
   const pointerAngle = 270;
-  const normalizedRotation = ((rotation % 360) + 360) % 360;
+  const normalizedRotation = getNormalizedRotation();
   let bestIndex = 0;
   let bestDistance = Infinity;
 
@@ -572,12 +902,22 @@ function announceWinner(){
   const winner = determineWinner();
   if(!winner) return;
   lastWinner = winner.label;
-  overlayWinner.textContent = `🎉 ${winner.label}`;
+  history.unshift(winner.label);
+  history = history.slice(0, 8);
+  const hitTarget = targetIndex !== null && segments.indexOf(winner) === targetIndex;
+  stats.streak = hitTarget ? stats.streak + 1 : 0;
+  stats.bestStreak = Math.max(stats.bestStreak, stats.streak);
+  overlayWinner.textContent = hitTarget ? `🎯 ${winner.label}` : `🎉 ${winner.label}`;
   overlayWinner.style.display = 'block';
   setTimeout(() => {
     overlayWinner.style.display = 'none';
   }, 2600);
-  hud.textContent = 'Winner locked';
+  hud.textContent = hitTarget ? 'Target hit!' : 'Winner locked';
+  burstConfetti();
+  playTone(680, 0.16, 'sine', 0.04);
+  playTone(840, 0.14, 'triangle', 0.03);
+  updateStatusUI();
+  persistState();
 }
 
 function tick(now){
@@ -586,10 +926,12 @@ function tick(now){
   if(isSpinning){
     const drag = 0.018 + velocity * 0.004;
     velocity = Math.max(0, velocity - drag * delta * 60);
-    rotation += velocity * 115 * delta;
-    if(velocity < 0.015 && spinTimer > 0.8){
+    rotation += velocity * 120 * delta;
+    const remainingDistance = targetRotation - rotation;
+    if(velocity < 0.02 && Math.abs(remainingDistance) < 2 && spinTimer > 0.6){
       isSpinning = false;
       velocity = 0;
+      rotation = ((targetRotation % 360) + 360) % 360;
       announceWinner();
       hud.textContent = 'Ready to spin';
     }
@@ -602,15 +944,28 @@ function tick(now){
 function attachEvents(){
   document.getElementById('spinBtn').addEventListener('click', spinWheel);
   document.getElementById('stopBtn').addEventListener('click', brakeWheel);
+  document.getElementById('randomTargetBtn').addEventListener('click', setTargetRandomly);
+  document.getElementById('randomColors').addEventListener('click', randomizeColors);
+  document.getElementById('shuffleSeg').addEventListener('click', shuffleSegments);
+  document.getElementById('clearTarget').addEventListener('click', () => {
+    targetIndex = null;
+    updateStatusUI();
+    renderSegmentList();
+    persistState();
+  });
   document.getElementById('addSeg').addEventListener('click', () => {
     segments.push({label:'New Prize', color:randomColor()});
     renderSegmentList();
     renderWheel();
+    persistState();
   });
   document.getElementById('resetSeg').addEventListener('click', () => {
     segments = [...defaultSegments];
+    targetIndex = null;
     renderSegmentList();
     renderWheel();
+    updateStatusUI();
+    persistState();
   });
   wheelSvg.addEventListener('click', spinWheel);
   window.addEventListener('keydown', (event) => {
@@ -619,11 +974,15 @@ function attachEvents(){
       spinWheel();
     }
   });
+  window.addEventListener('resize', resizeConfetti);
 }
 
+loadState();
 renderSegmentList();
 renderWheel();
+updateStatusUI();
 attachEvents();
+resizeConfetti();
 requestAnimationFrame(tick);
 </script>
 </body>
