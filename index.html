@@ -551,9 +551,21 @@ function determineWinner(){
   const sectorAngle = 360 / segments.length;
   const pointerAngle = 270;
   const normalizedRotation = ((rotation % 360) + 360) % 360;
-  const adjusted = (pointerAngle - normalizedRotation + 360) % 360;
-  const index = Math.min(segments.length - 1, Math.floor(adjusted / sectorAngle));
-  return segments[index];
+  let bestIndex = 0;
+  let bestDistance = Infinity;
+
+  segments.forEach((_, index) => {
+    const localCenterAngle = index * sectorAngle - 90;
+    const worldCenterAngle = (localCenterAngle - normalizedRotation + 360) % 360;
+    const distance = Math.abs(((worldCenterAngle - pointerAngle + 540) % 360) - 180);
+
+    if(distance < bestDistance){
+      bestDistance = distance;
+      bestIndex = index;
+    }
+  });
+
+  return segments[bestIndex];
 }
 
 function announceWinner(){
