@@ -26,6 +26,7 @@
   label{font-size:12px;color:#cfe}
   .footer{font-size:12px;opacity:0.8;margin-top:8px}
   #overlay-winner{position:absolute;left:50%;top:46%;transform:translate(-50%,-50%);pointer-events:none;font-size:28px;color:#fffb; text-shadow:0 4px 30px rgba(0,0,0,0.7); display:none}
+  #audio-hint{position:absolute;left:50%;top:10%;transform:translateX(-50%);background:rgba(0,0,0,0.45);color:#fff;padding:10px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.06);backdrop-filter:blur(6px);font-size:14px}
   /* responsive */
   @media(max-width:720px){ .ui{right:10px;left:10px;width:auto} }
 </style>
@@ -50,6 +51,7 @@
   <div class="footer">Photoreal PBR • HDR-like lighting • Bloom • Confetti • WebAudio SFX</div>
 </div>
 <div id="overlay-winner"></div>
+<div id="audio-hint">Click or tap to enable audio and interactions</div>
 
 <script type="module">
 import * as THREE from 'https://unpkg.com/three@0.152.0/build/three.module.js';
@@ -645,9 +647,16 @@ function setupAudio(){
   document.body.addEventListener('pointerdown', () => {
     if(audioCtx.state === 'suspended') audioCtx.resume();
     try{ spinOsc.start(); } catch(e){}
+    const hint = document.getElementById('audio-hint'); if(hint) hint.style.display = 'none';
   }, {once:true});
 
   spinOscGain = spinGain;
+}
+
+function ensureAudio(){
+  if(audioCtx.state === 'suspended'){
+    audioCtx.resume().catch(()=>{});
+  }
 }
 
 function startSpinSound(){
@@ -674,6 +683,7 @@ function updateSpinSound(speed){
 
 // Click sound when passing segment
 function playClickSound(vol=1.0){
+  if(audioCtx.state === 'suspended') audioCtx.resume().catch(()=>{});
   const o = audioCtx.createOscillator();
   o.type = 'square';
   o.frequency.value = 1100 + Math.random()*600;
@@ -689,6 +699,7 @@ function playClickSound(vol=1.0){
 
 // Confetti burst sound
 function playConfettiSound(){
+  if(audioCtx.state === 'suspended') audioCtx.resume().catch(()=>{});
   const now = audioCtx.currentTime;
   const noiseBuffer = audioCtx.createBuffer(1, audioCtx.sampleRate*0.2, audioCtx.sampleRate);
   const data = noiseBuffer.getChannelData(0);
@@ -702,6 +713,7 @@ function playConfettiSound(){
 
 // Simple celebratory bell
 function playBell(){
+  if(audioCtx.state === 'suspended') audioCtx.resume().catch(()=>{});
   const ctx = audioCtx;
   const o1 = ctx.createOscillator(); o1.type='sine';
   const o2 = ctx.createOscillator(); o2.type='sine';
